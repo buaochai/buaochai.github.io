@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="工资计算">
+<meta name="theme-color" content="#EEF1EF">
+<title>工资计算</title>
+<style>
+:root{
+  color-scheme:light dark;
+  --ground:#EEF1EF; --panel:#FFFFFF; --work:#F6F8F7;
+  --ink:#18221E; --ink-2:#56625C; --ink-3:#8A958F; --line:#D9DFDB;
+  --rest:#1E6B52; --rest-ink:#F2FBF7; --rest-soft:#D7EDE4; --hol:#B23A2E; --hol-soft:#F8DEDA;
+  --serif:"Noto Serif SC","Songti SC","STSong",serif;
+  --sans:"Noto Sans SC","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root{
+  --ground:#111715; --panel:#18201D; --work:#1C2522;
+  --ink:#E6ECE9; --ink-2:#A3B0AA; --ink-3:#6E7A74; --line:#2A3531;
+  --rest:#3FA37F; --rest-ink:#07140F; --rest-soft:#1D3A30; --hol:#F08A7C; --hol-soft:#3E1F1B;
+}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--ground);color:var(--ink);font:15px/1.55 var(--sans);padding:calc(14px + env(safe-area-inset-top,0px)) 16px calc(40px + env(safe-area-inset-bottom,0px))}
+.wrap{max-width:560px;margin:0 auto}
+h1{font:900 20px var(--serif);letter-spacing:.02em;margin:4px 0 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-top:14px}
+.card h2{font-size:15px;margin:0 0 10px}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
+.form label{display:flex;flex-direction:column;gap:3px;font-size:13px;color:var(--ink-2);min-width:0}
+.form .full{grid-column:1/-1}
+input{font:inherit;font-size:16px;color:var(--ink);background:var(--work);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0;width:100%}
+input::placeholder{color:var(--ink-3)}
+.hint{font-size:12px;color:var(--ink-3);margin-top:8px}
+.go{display:block;width:100%;margin-top:14px;padding:14px;font:inherit;font-size:17px;font-weight:700;background:var(--rest);color:var(--rest-ink);border:0;border-radius:12px;cursor:pointer}
+.go:active{opacity:.8}
+.warn{background:var(--hol-soft);color:var(--hol);border-radius:10px;padding:10px 12px;font-size:13px;margin-top:12px}
+.done{background:var(--rest-soft);border-radius:10px;padding:10px 12px;font-size:14px;margin-top:12px}
+.done b{font-family:var(--mono)}
+.big{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.big .l{color:var(--ink-3);font-size:13px}
+.big .v{font:600 32px var(--mono);font-variant-numeric:tabular-nums}
+.sub{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 10px;color:var(--ink-2);font-size:13px;margin-top:6px}
+.sub b{font-family:var(--mono);color:var(--ink)}
+.hrs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px}
+.hrs div{background:var(--work);border:1px solid var(--line);border-radius:10px;padding:6px 4px;text-align:center}
+.hrs b{display:block;font:600 16px var(--mono)}
+.hrs span{font-size:11px;color:var(--ink-3)}
+.rows .r{display:grid;grid-template-columns:1fr auto;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:15px;align-items:baseline}
+.rows .r:first-child{border-top:0}
+.rows .r .k small{display:block;color:var(--ink-3);font-size:12px}
+.rows .r .v{font-family:var(--mono);font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+.rows .r.neg .v{color:var(--hol)}
+.rows .r.sum{border-top:2px solid var(--ink-3);font-weight:700}
+.rows .r.in{padding-left:14px;font-size:14px}
+#out{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>工资计算</h1>
+
+  <section class="card">
+    <h2>这个月</h2>
+    <div class="form">
+      <label>上班天数<input type="number" id="days" inputmode="decimal" step="0.5" placeholder="0"></label>
+      <label>每天上班小时<input type="number" id="hours" inputmode="decimal" step="0.5" value="12" placeholder="12"></label>
+      <label>节假日三倍天数<input type="number" id="holDays" inputmode="decimal" step="0.5" placeholder="0"></label>
+      <label>节假日每天小时<input type="number" id="holHours" inputmode="decimal" step="0.5" value="12" placeholder="12"></label>
+      <label>早班津贴（元）<input type="number" id="subD" inputmode="decimal" step="0.01" placeholder="0"></label>
+      <label>晚班津贴（元）<input type="number" id="subN" inputmode="decimal" step="0.01" placeholder="0"></label>
+      <label>奖金（元）<input type="number" id="bonus" inputmode="decimal" step="0.01" placeholder="0"></label>
+      <label>罚金（元）<input type="number" id="fine" inputmode="decimal" step="0.01" placeholder="0"></label>
+      <label class="full">餐费（元，税后扣）<input type="number" id="meal" inputmode="decimal" step="0.01" placeholder="0"></label>
+    </div>
+    <div class="hint">不填的按 0 算；小时不填按 12 算。节假日三倍的天数也要算在上班天数里：那几天先按正常上班记，再另外加发三倍。</div>
+    <button class="go" id="go" type="button" onclick="window.__calc&&window.__calc(true)">计算</button>
+    <div class="warn" id="nojs">如果点“计算”没有反应，请用 Safari、Chrome 等浏览器打开这个网页。</div>
+    <div id="msg"></div>
+  </section>
+
+  <div id="out">
+    <section class="card" id="result">
+      <div class="big"><span class="l">实发</span><span class="v" id="net"></span></div>
+      <div class="sub"><span>应发 <b id="sGross"></b></span><span>个税 <b id="sTax"></b></span><span>五险一金 <b id="sSoc"></b></span></div>
+      <div class="hrs" id="hrs"></div>
+    </section>
+    <section class="card"><div class="rows" id="rows"></div></section>
+  </div>
+
+  <div class="hint" style="text-align:center;margin-top:14px">已设好：基本工资 2200、基本工时 174 小时/月、绩效 2360、劳保津贴 300、加班 1.5 倍、节假日 3 倍；五险一金 727.73；个税 =（应发 − 5000 − 五险一金）× 3%。不联网，填的数只存在这台手机的浏览器里。</div>
+</div>
+<script>
+(function(){
+"use strict";
+var $=function(id){return document.getElementById(id)};
+var nj=$("nojs"); if(nj)nj.style.display="none";   // 能运行到这里，说明计算可用，不用显示提示
+// 固定参数：直接写在这里，页面上不用填
+var FIX={base:2200,stdH:174,perf:2360,labor:300,ot:1.5,hol:3,
+  pen:4588,med:6117,fund:2200,penR:8,medR:2,fundR:10,unR:0.4,thresh:5000,rate:3};
+var FIELDS=["days","hours","holDays","holHours","subD","subN","bonus","fine","meal"];
+var DEF_BLANK={hours:12,holHours:12};   // 空着时按这个数算，其余空着按 0
+var LS="gongzi-v3";
+function r2(v){return Math.round(v*100)/100}
+function money(v){return r2(v).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}
+function h(x){return String(r2(x)).replace(/\.0+$/,"")}
+function get(id){var s=String($(id).value||"").trim(); if(s==="")return DEF_BLANK[id]||0; var v=Number(s); return isFinite(v)?v:(DEF_BLANK[id]||0)}
+function row(k,v,cls,small){return '<div class="r '+(cls||"")+'"><span class="k">'+k+(small?'<small>'+small+'</small>':'')+'</span><span class="v">'+v+'</span></div>'}
+function save(){var o={}; FIELDS.forEach(function(k){o[k]=$(k).value}); try{localStorage.setItem(LS,JSON.stringify(o))}catch(e){}}
+function load(){try{var o=JSON.parse(localStorage.getItem(LS)||"null"); if(o)FIELDS.forEach(function(k){if(typeof o[k]==="string")$(k).value=o[k]})}catch(e){}}
+function calc(scroll){
+  var P={}; FIELDS.forEach(function(k){P[k]=get(k)});
+  var hourly=FIX.base/FIX.stdH, hr=Math.round(hourly*100)/100;   // 加班、三倍用保留两位小数的时薪 12.64
+  var total=P.days*P.hours, inStd=Math.min(total,FIX.stdH), otH=Math.max(0,total-FIX.stdH);
+  var basePay=inStd*hourly, otPay=otH*hr*FIX.ot, holH=P.holDays*P.holHours, holPay=holH*hr*FIX.hol;
+  var gross=basePay+FIX.perf+otPay+holPay+P.subD+P.subN+FIX.labor+P.bonus-P.fine;
+  var soc=[["养老保险",FIX.pen,FIX.penR],["医疗保险",FIX.med,FIX.medR],["住房公积金",FIX.fund,FIX.fundR],["失业保险",FIX.pen,FIX.unR]].map(function(x){return {n:x[0],b:x[1],r:x[2],a:r2(x[1]*x[2]/100)}});
+  var socSum=r2(soc.reduce(function(a,x){return a+x.a},0));
+  var taxable=gross-FIX.thresh-socSum, tax=r2(Math.max(0,taxable)*FIX.rate/100);
+  var net=gross-socSum-tax-P.meal;
+
+  $("net").textContent="¥"+money(net); $("sGross").textContent=money(gross); $("sTax").textContent=money(tax); $("sSoc").textContent=money(socSum);
+  $("hrs").innerHTML=[["总工时",h(total)+"h"],["标准内",h(inStd)+"h"],["加班",h(otH)+"h"],["三倍",h(holH)+"h"]].map(function(x){return '<div><b>'+x[1]+'</b><span>'+x[0]+'</span></div>'}).join("");
+  var R=[row("基础工资",money(basePay),"",h(inStd)+"h × 时薪 "+money(hourly)+(inStd<FIX.stdH?"（没满 174h）":"")),
+    row("绩效工资",money(FIX.perf)),
+    row("加班费",money(otPay),"",h(otH)+"h × "+money(hr)+" × 1.5（"+h(P.days)+" 天 × "+h(P.hours)+"h = "+h(total)+"h，减 174h）"),
+    row("节假日三倍",money(holPay),"",h(P.holDays)+" 天 × "+h(P.holHours)+"h = "+h(holH)+"h × "+money(hr)+" × 3（另加）")];
+  if(P.subD)R.push(row("早班津贴",money(P.subD)));
+  if(P.subN)R.push(row("晚班津贴",money(P.subN)));
+  R.push(row("劳保津贴",money(FIX.labor)));
+  if(P.bonus)R.push(row("奖金",money(P.bonus)));
+  if(P.fine)R.push(row("罚金","−"+money(P.fine),"neg"));
+  R.push(row("应发合计",money(gross),"sum"));
+  R.push(row("五险一金","−"+money(socSum),"neg"));
+  soc.forEach(function(x){R.push(row(x.n,"−"+money(x.a),"neg in","基数 "+money(x.b)+" × "+x.r+"%"))});
+  R.push(row("个人所得税","−"+money(tax),"neg","应税 "+money(Math.max(0,taxable))+" × 3%（应发 − 5000 − 五险一金）"));
+  R.push(row("餐费","−"+money(P.meal),"neg"));
+  R.push(row("实发",money(net),"sum"));
+  $("rows").innerHTML=R.join("");
+  $("out").style.display="block";
+  if(scroll){
+    $("msg").innerHTML='<div class="done">已计算：上班 <b>'+h(P.days)+'</b> 天 × <b>'+h(P.hours)+'</b>h = <b>'+h(total)+'</b>h，其中加班 <b>'+h(otH)+'</b>h；节假日三倍 <b>'+h(holH)+'</b>h。实发 <b>¥'+money(net)+'</b></div>';
+    save();
+    try{$("result").scrollIntoView({behavior:"smooth",block:"start"})}catch(e){$("result").scrollIntoView()}
+  }
+}
+window.__calc=calc;
+load();
+document.addEventListener("input",function(e){if(FIELDS.indexOf(e.target.id)>=0){save(); if($("out").style.display==="block")calc(false)}});
+calc(false);
+})();
+</script>
+</body>
+</html>
