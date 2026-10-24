@@ -90,7 +90,7 @@ details.soc>summary .v{font-family:var(--mono);font-weight:600;color:var(--hol);
       <label>税率 %<input type="number" id="p_rate" inputmode="decimal" step="0.01" value="3" placeholder="3"></label>
       <h3>五险一金（个人部分）</h3>
       <label>养老、失业基数<input type="number" id="p_pen" inputmode="decimal" step="0.01" value="4588" placeholder="4588"></label>
-      <label>医疗基数<input type="number" id="p_med" inputmode="decimal" step="0.01" value="6117" placeholder="6117"></label>
+      <label>医疗基数<input type="number" id="p_med" inputmode="decimal" step="0.01" value="6265" placeholder="6265"></label>
       <label>公积金基数<input type="number" id="p_fund" inputmode="decimal" step="0.01" value="2200" placeholder="2200"></label>
       <label>养老比例 %<input type="number" id="p_penR" inputmode="decimal" step="0.01" value="8" placeholder="8"></label>
       <label>医疗比例 %<input type="number" id="p_medR" inputmode="decimal" step="0.01" value="2" placeholder="2"></label>
@@ -129,7 +129,7 @@ details.soc>summary .v{font-family:var(--mono);font-weight:600;color:var(--hol);
     <section class="card"><div class="rows" id="rows"></div></section>
   </div>
 
-  <div class="hint" style="text-align:center;margin-top:14px">默认：基本工资 2200、基本工时 174 小时/月、劳保津贴 300、加班 1.5 倍、节假日 3 倍；五险一金 727.73；个税 =（应发 − 5000 − 五险一金）× 3%，可以在上面的“工资参数”里改。不联网，填的数只存在这台手机的浏览器里。</div>
+  <div class="hint" style="text-align:center;margin-top:14px">默认：基本工资 2200、基本工时 174 小时/月、劳保津贴 300、加班 1.5 倍、节假日 3 倍；五险一金 730.69；个税 =（应发 − 5000 − 五险一金）× 3%，可以在上面的“工资参数”里改。不联网，填的数只存在这台手机的浏览器里。</div>
 </div>
 <script>
 (function(){
@@ -138,14 +138,14 @@ var $=function(id){return document.getElementById(id)};
 var nj=$("nojs"); if(nj)nj.style.display="none";   // 能运行到这里，说明计算可用，不用显示提示
 // 固定参数：直接写在这里，页面上不用填
 var FIX={base:2200,stdH:174,labor:300,ot:1.5,hol:3,
-  pen:4588,med:6117,fund:2200,penR:8,medR:2,fundR:10,unR:0.4,thresh:5000,rate:3};
+  pen:4588,med:6265,fund:2200,penR:8,medR:2,fundR:10,unR:0.4,thresh:5000,rate:3};
 var FIELDS=["days","hours","holDays","holHours","subD","subN","perf","bonus","fine","meal"];
 var DEF_BLANK={hours:12,holHours:12};   // 空着时按这个数算，其余空着按 0
 var LS="gongzi-v3", LSP="gongzi-params-v1";
 var PKEYS=Object.keys(FIX);
 function cfg(){var C={}; PKEYS.forEach(function(k){var el=$("p_"+k), t=el?String(el.value||"").trim():"", v=Number(t); C[k]=(t===""||!isFinite(v))?FIX[k]:v}); if(!(C.stdH>0))C.stdH=FIX.stdH; return C}
 function saveP(){var o={}; PKEYS.forEach(function(k){o[k]=$("p_"+k).value}); try{localStorage.setItem(LSP,JSON.stringify(o))}catch(e){}}
-function loadP(){try{var o=JSON.parse(localStorage.getItem(LSP)||"null"); if(o)PKEYS.forEach(function(k){if(typeof o[k]==="string")$("p_"+k).value=o[k]})}catch(e){}}
+function loadP(){try{var o=JSON.parse(localStorage.getItem(LSP)||"null"); if(o&&o.med==="6117")o.med="6265";   /* 2026 年医保基数下限调到 6265 */ if(o)PKEYS.forEach(function(k){if(typeof o[k]==="string")$("p_"+k).value=o[k]})}catch(e){}}
 function r2(v){return Math.round(v*100)/100}
 function money(v){return r2(v).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}
 function h(x){return String(r2(x)).replace(/\.0+$/,"")}
