@@ -72,9 +72,10 @@ input::placeholder{color:var(--ink-3)}
       <label>节假日每天小时<input type="number" id="holHours" inputmode="decimal" step="0.5" value="12" placeholder="12"></label>
       <label>早班津贴（元）<input type="number" id="subD" inputmode="decimal" step="0.01" placeholder="0"></label>
       <label>晚班津贴（元）<input type="number" id="subN" inputmode="decimal" step="0.01" placeholder="0"></label>
+      <label>绩效工资（元）<input type="number" id="perf" inputmode="decimal" step="0.01" placeholder="0"></label>
       <label>奖金（元）<input type="number" id="bonus" inputmode="decimal" step="0.01" placeholder="0"></label>
       <label>罚金（元）<input type="number" id="fine" inputmode="decimal" step="0.01" placeholder="0"></label>
-      <label class="full">餐费（元，税后扣）<input type="number" id="meal" inputmode="decimal" step="0.01" placeholder="0"></label>
+      <label>餐费（元，税后扣）<input type="number" id="meal" inputmode="decimal" step="0.01" placeholder="0"></label>
     </div>
     <div class="hint">不填的按 0 算；小时不填按 12 算。节假日三倍的天数也要算在上班天数里：那几天先按正常上班记，再另外加发三倍。</div>
     <button class="go" id="go" type="button" onclick="window.__calc&&window.__calc(true)">计算</button>
@@ -91,7 +92,7 @@ input::placeholder{color:var(--ink-3)}
     <section class="card"><div class="rows" id="rows"></div></section>
   </div>
 
-  <div class="hint" style="text-align:center;margin-top:14px">已设好：基本工资 2200、基本工时 174 小时/月、绩效 2360、劳保津贴 300、加班 1.5 倍、节假日 3 倍；五险一金 727.73；个税 =（应发 − 5000 − 五险一金）× 3%。不联网，填的数只存在这台手机的浏览器里。</div>
+  <div class="hint" style="text-align:center;margin-top:14px">已设好：基本工资 2200、基本工时 174 小时/月、劳保津贴 300、加班 1.5 倍、节假日 3 倍；五险一金 727.73；个税 =（应发 − 5000 − 五险一金）× 3%。不联网，填的数只存在这台手机的浏览器里。</div>
 </div>
 <script>
 (function(){
@@ -99,9 +100,9 @@ input::placeholder{color:var(--ink-3)}
 var $=function(id){return document.getElementById(id)};
 var nj=$("nojs"); if(nj)nj.style.display="none";   // 能运行到这里，说明计算可用，不用显示提示
 // 固定参数：直接写在这里，页面上不用填
-var FIX={base:2200,stdH:174,perf:2360,labor:300,ot:1.5,hol:3,
+var FIX={base:2200,stdH:174,labor:300,ot:1.5,hol:3,
   pen:4588,med:6117,fund:2200,penR:8,medR:2,fundR:10,unR:0.4,thresh:5000,rate:3};
-var FIELDS=["days","hours","holDays","holHours","subD","subN","bonus","fine","meal"];
+var FIELDS=["days","hours","holDays","holHours","subD","subN","perf","bonus","fine","meal"];
 var DEF_BLANK={hours:12,holHours:12};   // 空着时按这个数算，其余空着按 0
 var LS="gongzi-v3";
 function r2(v){return Math.round(v*100)/100}
@@ -116,7 +117,7 @@ function calc(scroll){
   var hourly=FIX.base/FIX.stdH, hr=Math.round(hourly*100)/100;   // 加班、三倍用保留两位小数的时薪 12.64
   var total=P.days*P.hours, inStd=Math.min(total,FIX.stdH), otH=Math.max(0,total-FIX.stdH);
   var basePay=inStd*hourly, otPay=otH*hr*FIX.ot, holH=P.holDays*P.holHours, holPay=holH*hr*FIX.hol;
-  var gross=basePay+FIX.perf+otPay+holPay+P.subD+P.subN+FIX.labor+P.bonus-P.fine;
+  var gross=basePay+P.perf+otPay+holPay+P.subD+P.subN+FIX.labor+P.bonus-P.fine;
   var soc=[["养老保险",FIX.pen,FIX.penR],["医疗保险",FIX.med,FIX.medR],["住房公积金",FIX.fund,FIX.fundR],["失业保险",FIX.pen,FIX.unR]].map(function(x){return {n:x[0],b:x[1],r:x[2],a:r2(x[1]*x[2]/100)}});
   var socSum=r2(soc.reduce(function(a,x){return a+x.a},0));
   var taxable=gross-FIX.thresh-socSum, tax=r2(Math.max(0,taxable)*FIX.rate/100);
@@ -125,7 +126,7 @@ function calc(scroll){
   $("net").textContent="¥"+money(net); $("sGross").textContent=money(gross); $("sTax").textContent=money(tax); $("sSoc").textContent=money(socSum);
   $("hrs").innerHTML=[["总工时",h(total)+"h"],["标准内",h(inStd)+"h"],["加班",h(otH)+"h"],["三倍",h(holH)+"h"]].map(function(x){return '<div><b>'+x[1]+'</b><span>'+x[0]+'</span></div>'}).join("");
   var R=[row("基础工资",money(basePay),"",h(inStd)+"h × 时薪 "+money(hourly)+(inStd<FIX.stdH?"（没满 174h）":"")),
-    row("绩效工资",money(FIX.perf)),
+    row("绩效工资",money(P.perf)),
     row("加班费",money(otPay),"",h(otH)+"h × "+money(hr)+" × 1.5（"+h(P.days)+" 天 × "+h(P.hours)+"h = "+h(total)+"h，减 174h）"),
     row("节假日三倍",money(holPay),"",h(P.holDays)+" 天 × "+h(P.holHours)+"h = "+h(holH)+"h × "+money(hr)+" × 3（另加）")];
   if(P.subD)R.push(row("早班津贴",money(P.subD)));
