@@ -7,6 +7,9 @@
 <meta name="apple-mobile-web-app-title" content="工资计算">
 <meta name="theme-color" content="#EEF1EF">
 <title>工资计算</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="icon" href="icon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
 :root{
   color-scheme:light dark;
@@ -57,11 +60,45 @@ input::placeholder{color:var(--ink-3)}
 .rows .r.sum{border-top:2px solid var(--ink-3);font-weight:700}
 .rows .r.in{padding-left:14px;font-size:14px}
 #out{display:none}
+.card>summary{cursor:pointer;font-weight:700;font-size:15px;list-style:none}
+.card>summary::-webkit-details-marker{display:none}
+.card>summary::after{content:" ▾";color:var(--ink-3);font-size:12px}
+.card[open]>summary::after{content:" ▴"}
+.card[open]>summary{margin-bottom:12px}
+.card>summary small{font-weight:400;color:var(--ink-3);font-size:12px;margin-left:6px}
+.form h3{grid-column:1/-1;margin:6px 0 0;font-size:14px;color:var(--ink)}
+.btn2{border:1px solid var(--line);background:var(--panel);color:var(--ink-2);border-radius:9px;padding:8px 14px;font:inherit;font-size:14px;cursor:pointer;margin-top:12px}
+details.soc>summary{display:grid;grid-template-columns:1fr auto;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:15px;cursor:pointer;list-style:none}
+details.soc>summary::-webkit-details-marker{display:none}
+details.soc>summary .k::after{content:" ▾";color:var(--ink-3);font-size:12px}
+details.soc[open]>summary .k::after{content:" ▴"}
+details.soc>summary .v{font-family:var(--mono);font-weight:600;color:var(--hol);text-align:right}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>工资计算</h1>
+
+  <details class="card" id="params"><summary>工资参数<small>平时不用改，不填就按默认</small></summary>
+    <div class="form">
+      <label>基本工资（元）<input type="number" id="p_base" inputmode="decimal" step="0.01" value="2200" placeholder="2200"></label>
+      <label>基本工时（小时/月）<input type="number" id="p_stdH" inputmode="decimal" step="0.5" value="174" placeholder="174"></label>
+      <label>劳保津贴（元）<input type="number" id="p_labor" inputmode="decimal" step="0.01" value="300" placeholder="300"></label>
+      <label>加班倍数<input type="number" id="p_ot" inputmode="decimal" step="0.1" value="1.5" placeholder="1.5"></label>
+      <label>节假日倍数<input type="number" id="p_hol" inputmode="decimal" step="0.1" value="3" placeholder="3"></label>
+      <label>起征点（元）<input type="number" id="p_thresh" inputmode="decimal" step="1" value="5000" placeholder="5000"></label>
+      <label>税率 %<input type="number" id="p_rate" inputmode="decimal" step="0.01" value="3" placeholder="3"></label>
+      <h3>五险一金（个人部分）</h3>
+      <label>养老、失业基数<input type="number" id="p_pen" inputmode="decimal" step="0.01" value="4588" placeholder="4588"></label>
+      <label>医疗基数<input type="number" id="p_med" inputmode="decimal" step="0.01" value="6117" placeholder="6117"></label>
+      <label>公积金基数<input type="number" id="p_fund" inputmode="decimal" step="0.01" value="2200" placeholder="2200"></label>
+      <label>养老比例 %<input type="number" id="p_penR" inputmode="decimal" step="0.01" value="8" placeholder="8"></label>
+      <label>医疗比例 %<input type="number" id="p_medR" inputmode="decimal" step="0.01" value="2" placeholder="2"></label>
+      <label>公积金比例 %<input type="number" id="p_fundR" inputmode="decimal" step="0.01" value="10" placeholder="10"></label>
+      <label>失业比例 %<input type="number" id="p_unR" inputmode="decimal" step="0.01" value="0.4" placeholder="0.4"></label>
+    </div>
+    <button class="btn2" id="pReset" type="button">恢复默认参数</button>
+  </details>
 
   <section class="card">
     <h2>这个月</h2>
@@ -92,7 +129,7 @@ input::placeholder{color:var(--ink-3)}
     <section class="card"><div class="rows" id="rows"></div></section>
   </div>
 
-  <div class="hint" style="text-align:center;margin-top:14px">已设好：基本工资 2200、基本工时 174 小时/月、劳保津贴 300、加班 1.5 倍、节假日 3 倍；五险一金 727.73；个税 =（应发 − 5000 − 五险一金）× 3%。不联网，填的数只存在这台手机的浏览器里。</div>
+  <div class="hint" style="text-align:center;margin-top:14px">默认：基本工资 2200、基本工时 174 小时/月、劳保津贴 300、加班 1.5 倍、节假日 3 倍；五险一金 727.73；个税 =（应发 − 5000 − 五险一金）× 3%，可以在上面的“工资参数”里改。不联网，填的数只存在这台手机的浏览器里。</div>
 </div>
 <script>
 (function(){
@@ -104,7 +141,11 @@ var FIX={base:2200,stdH:174,labor:300,ot:1.5,hol:3,
   pen:4588,med:6117,fund:2200,penR:8,medR:2,fundR:10,unR:0.4,thresh:5000,rate:3};
 var FIELDS=["days","hours","holDays","holHours","subD","subN","perf","bonus","fine","meal"];
 var DEF_BLANK={hours:12,holHours:12};   // 空着时按这个数算，其余空着按 0
-var LS="gongzi-v3";
+var LS="gongzi-v3", LSP="gongzi-params-v1";
+var PKEYS=Object.keys(FIX);
+function cfg(){var C={}; PKEYS.forEach(function(k){var el=$("p_"+k), t=el?String(el.value||"").trim():"", v=Number(t); C[k]=(t===""||!isFinite(v))?FIX[k]:v}); if(!(C.stdH>0))C.stdH=FIX.stdH; return C}
+function saveP(){var o={}; PKEYS.forEach(function(k){o[k]=$("p_"+k).value}); try{localStorage.setItem(LSP,JSON.stringify(o))}catch(e){}}
+function loadP(){try{var o=JSON.parse(localStorage.getItem(LSP)||"null"); if(o)PKEYS.forEach(function(k){if(typeof o[k]==="string")$("p_"+k).value=o[k]})}catch(e){}}
 function r2(v){return Math.round(v*100)/100}
 function money(v){return r2(v).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}
 function h(x){return String(r2(x)).replace(/\.0+$/,"")}
@@ -113,31 +154,30 @@ function row(k,v,cls,small){return '<div class="r '+(cls||"")+'"><span class="k"
 function save(){var o={}; FIELDS.forEach(function(k){o[k]=$(k).value}); try{localStorage.setItem(LS,JSON.stringify(o))}catch(e){}}
 function load(){try{var o=JSON.parse(localStorage.getItem(LS)||"null"); if(o)FIELDS.forEach(function(k){if(typeof o[k]==="string")$(k).value=o[k]})}catch(e){}}
 function calc(scroll){
-  var P={}; FIELDS.forEach(function(k){P[k]=get(k)});
-  var hourly=FIX.base/FIX.stdH, hr=Math.round(hourly*100)/100;   // 加班、三倍用保留两位小数的时薪 12.64
-  var total=P.days*P.hours, inStd=Math.min(total,FIX.stdH), otH=Math.max(0,total-FIX.stdH);
-  var basePay=inStd*hourly, otPay=otH*hr*FIX.ot, holH=P.holDays*P.holHours, holPay=holH*hr*FIX.hol;
-  var gross=basePay+P.perf+otPay+holPay+P.subD+P.subN+FIX.labor+P.bonus-P.fine;
-  var soc=[["养老保险",FIX.pen,FIX.penR],["医疗保险",FIX.med,FIX.medR],["住房公积金",FIX.fund,FIX.fundR],["失业保险",FIX.pen,FIX.unR]].map(function(x){return {n:x[0],b:x[1],r:x[2],a:r2(x[1]*x[2]/100)}});
+  var P={}; FIELDS.forEach(function(k){P[k]=get(k)}); var FX=cfg();
+  var hourly=FX.base/FX.stdH, hr=Math.round(hourly*100)/100;   // 加班、三倍用保留两位小数的时薪 12.64
+  var total=P.days*P.hours, inStd=Math.min(total,FX.stdH), otH=Math.max(0,total-FX.stdH);
+  var basePay=inStd*hourly, otPay=otH*hr*FX.ot, holH=P.holDays*P.holHours, holPay=holH*hr*FX.hol;
+  var gross=basePay+P.perf+otPay+holPay+P.subD+P.subN+FX.labor+P.bonus-P.fine;
+  var soc=[["养老保险",FX.pen,FX.penR],["医疗保险",FX.med,FX.medR],["住房公积金",FX.fund,FX.fundR],["失业保险",FX.pen,FX.unR]].map(function(x){return {n:x[0],b:x[1],r:x[2],a:r2(x[1]*x[2]/100)}});
   var socSum=r2(soc.reduce(function(a,x){return a+x.a},0));
-  var taxable=gross-FIX.thresh-socSum, tax=r2(Math.max(0,taxable)*FIX.rate/100);
+  var taxable=gross-FX.thresh-socSum, tax=r2(Math.max(0,taxable)*FX.rate/100);
   var net=gross-socSum-tax-P.meal;
 
   $("net").textContent="¥"+money(net); $("sGross").textContent=money(gross); $("sTax").textContent=money(tax); $("sSoc").textContent=money(socSum);
   $("hrs").innerHTML=[["总工时",h(total)+"h"],["标准内",h(inStd)+"h"],["加班",h(otH)+"h"],["三倍",h(holH)+"h"]].map(function(x){return '<div><b>'+x[1]+'</b><span>'+x[0]+'</span></div>'}).join("");
-  var R=[row("基础工资",money(basePay),"",h(inStd)+"h × 时薪 "+money(hourly)+(inStd<FIX.stdH?"（没满 174h）":"")),
+  var R=[row("基础工资",money(basePay),"",h(inStd)+"h × 时薪 "+money(hourly)+(inStd<FX.stdH?"（没满 "+h(FX.stdH)+"h）":"")),
     row("绩效工资",money(P.perf)),
-    row("加班费",money(otPay),"",h(otH)+"h × "+money(hr)+" × 1.5（"+h(P.days)+" 天 × "+h(P.hours)+"h = "+h(total)+"h，减 174h）"),
-    row("节假日三倍",money(holPay),"",h(P.holDays)+" 天 × "+h(P.holHours)+"h = "+h(holH)+"h × "+money(hr)+" × 3（另加）")];
+    row("加班费",money(otPay),"",h(otH)+"h × "+money(hr)+" × "+h(FX.ot)+"（"+h(P.days)+" 天 × "+h(P.hours)+"h = "+h(total)+"h，减 "+h(FX.stdH)+"h）"),
+    row("节假日三倍",money(holPay),"",h(P.holDays)+" 天 × "+h(P.holHours)+"h = "+h(holH)+"h × "+money(hr)+" × "+h(FX.hol)+"（另加）")];
   if(P.subD)R.push(row("早班津贴",money(P.subD)));
   if(P.subN)R.push(row("晚班津贴",money(P.subN)));
-  R.push(row("劳保津贴",money(FIX.labor)));
+  R.push(row("劳保津贴",money(FX.labor)));
   if(P.bonus)R.push(row("奖金",money(P.bonus)));
   if(P.fine)R.push(row("罚金","−"+money(P.fine),"neg"));
   R.push(row("应发合计",money(gross),"sum"));
-  R.push(row("五险一金","−"+money(socSum),"neg"));
-  soc.forEach(function(x){R.push(row(x.n,"−"+money(x.a),"neg in","基数 "+money(x.b)+" × "+x.r+"%"))});
-  R.push(row("个人所得税","−"+money(tax),"neg","应税 "+money(Math.max(0,taxable))+" × 3%（应发 − 5000 − 五险一金）"));
+  R.push('<details class="soc"><summary><span class="k">五险一金</span><span class="v">−'+money(socSum)+'</span></summary>'+soc.map(function(x){return row(x.n,"−"+money(x.a),"neg in","基数 "+money(x.b)+" × "+x.r+"%")}).join("")+'</details>');
+  R.push(row("个人所得税","−"+money(tax),"neg","应税 "+money(Math.max(0,taxable))+" × "+h(FX.rate)+"%（应发 − "+h(FX.thresh)+" − 五险一金）"));
   R.push(row("餐费","−"+money(P.meal),"neg"));
   R.push(row("实发",money(net),"sum"));
   $("rows").innerHTML=R.join("");
@@ -149,8 +189,9 @@ function calc(scroll){
   }
 }
 window.__calc=calc;
-load();
-document.addEventListener("input",function(e){if(FIELDS.indexOf(e.target.id)>=0){save(); if($("out").style.display==="block")calc(false)}});
+load(); loadP();
+document.addEventListener("input",function(e){var id=e.target.id||""; if(FIELDS.indexOf(id)>=0)save(); else if(id.indexOf("p_")===0)saveP(); else return; if($("out").style.display==="block")calc(false)});
+$("pReset").addEventListener("click",function(){PKEYS.forEach(function(k){$("p_"+k).value=FIX[k]}); saveP(); calc(false)});
 calc(false);
 })();
 </script>
